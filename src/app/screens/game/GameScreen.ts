@@ -12,14 +12,16 @@ import { Button } from "../../ui/Button";
 import { MenuScreen } from "../menu/MenuScreen";
 import { Label } from "../../ui/Label";
 import { getMode } from "../../getMode";
+import { Game } from "./Game";
 
 /** The screen that holds the app */
 export class GameScreen extends Container {
   /** Assets bundles required by this screen */
   public static assetBundles = ["main"]; // TODO: fix asset bundle stuff
 
-  public mainContainer: Container;
+  public gameContainer: Container;
   private modeLabel: Label;
+  private game: Game;
   private pauseButton: FancyButton;
   private settingsButton: FancyButton;
   private backButton: FancyButton;
@@ -27,9 +29,6 @@ export class GameScreen extends Container {
 
   constructor() {
     super();
-
-    this.mainContainer = new Container();
-    this.addChild(this.mainContainer);
 
     this.modeLabel = new Label({
       text: `game mode: ${getMode()}`,
@@ -39,7 +38,7 @@ export class GameScreen extends Container {
           fontSize: 36,
       },
     });
-    this.mainContainer.addChild(this.modeLabel);
+    this.addChild(this.modeLabel);
 
     const buttonAnimations = {
       hover: {
@@ -83,6 +82,10 @@ export class GameScreen extends Container {
       engine().navigation.showScreen(MenuScreen),
     );
     this.addChild(this.backButton);
+
+    this.game = new Game();
+    this.gameContainer = new Container();
+    this.addChild(this.gameContainer);
   }
 
   /** Prepare the screen just before showing */
@@ -92,17 +95,18 @@ export class GameScreen extends Container {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public update(_time: Ticker) {
     if (this.paused) return;
+    this.game.update();
   }
 
   /** Pause gameplay - automatically fired when a popup is presented */
   public async pause() {
-    this.mainContainer.interactiveChildren = false;
+    this.gameContainer.interactiveChildren = false;
     this.paused = true;
   }
 
   /** Resume gameplay */
   public async resume() {
-    this.mainContainer.interactiveChildren = true;
+    this.gameContainer.interactiveChildren = true;
     this.paused = false;
   }
 
@@ -111,17 +115,25 @@ export class GameScreen extends Container {
 
   /** Resize the screen, fired whenever window size changes */
   public resize(width: number, height: number) {
+    console.log(`Resizing to width ${width} and height ${height}`);
     const centerX = width * 0.5;
     const centerY = height * 0.5;
 
-    this.mainContainer.x = centerX;
-    this.mainContainer.y = centerY;
+    this.gameContainer.x = centerX;
+    this.gameContainer.y = centerY;
+    this.gameContainer.pivot.set(this.gameContainer.width * 0.5, this.gameContainer.height * 0.5);
+    // console.log(this.gameContainer.x, this.gameContainer.y);
+    // console.log(this.gameContainer.width, this.gameContainer.height);
+    // console.log(this.gameContainer.pivot.x, this.gameContainer.pivot.y);
     this.pauseButton.x = 30;
     this.pauseButton.y = 30;
     this.settingsButton.x = width - 30;
     this.settingsButton.y = 30;
     this.backButton.x = centerX;
-    this.backButton.y = height - 75;
+    this.backButton.y = height - 60;
+    this.modeLabel.x = centerX;
+    this.modeLabel.y = 30;
+    this.game.resize(width, height);
   }
 
   /** Show screen with animations */
@@ -145,6 +157,7 @@ export class GameScreen extends Container {
     }
 
     await finalPromise;
+    this.game.show(this);
   }
 
   /** Hide screen with animations */
